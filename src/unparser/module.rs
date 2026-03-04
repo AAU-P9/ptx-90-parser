@@ -207,6 +207,15 @@ impl PtxUnparser for ModuleDirective {
             ModuleDirective::Debug { directive, .. } => {
                 directive.unparse_tokens_mode(tokens, spaced)
             }
+            ModuleDirective::Meta { directive, .. } => {
+                let version_prefix = match directive.version {
+                    Some(v) => format!(":{}", v),
+                    None => String::new(),
+                };
+                let tag_str = format!("{:?}", directive.tag);
+                tokens.push(PtxToken::MetaComment(format!("{} {}", version_prefix, tag_str).trim().to_string()));
+                push_newline(tokens, spaced);
+            }
         }
     }
 }

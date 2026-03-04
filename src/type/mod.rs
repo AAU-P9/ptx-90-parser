@@ -14,6 +14,7 @@
 // Types are re-exported at top level for public API
 pub(crate) mod common;
 pub(crate) mod function;
+pub mod meta;
 pub(crate) mod module;
 pub(crate) mod variable;
 
@@ -49,3 +50,6 @@ pub use variable::{
     GlobalInitializer, InitializerValue, ModuleVariableDirective, ParamStateSpace,
     ParameterDirective, VariableDirective, VariableModifier,
 };
+
+// Re-export meta annotation types
+pub use meta::{MetaConstraint, MetaDirective, MetaTag, parse_meta_content};

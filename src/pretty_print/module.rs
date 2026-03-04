@@ -70,6 +70,13 @@ impl TreeDisplay for ModuleDirective {
                 ))?;
                 f.field_with_child(true, "directive", directive, source)
             }
+            ModuleDirective::Meta { directive, span } => {
+                f.root(&format!(
+                    "ModuleDirective::Meta [{}] {:?}",
+                    f.format_raw(*span, source),
+                    directive.tag
+                ))
+            }
         }
     }
 }

@@ -6,6 +6,13 @@ pub use logos::Span;
 #[logos(error = LexError)]
 #[logos(skip r"[ \t\r\n]+")] // Skip whitespace, including newlines
 pub enum PtxSpecToken {
+    // Capture // @META comments as tokens
+    #[regex(r"// @META[^\n]*", priority = 10, callback = |lex| {
+        let s = lex.slice();
+        s["// @META".len()..].trim().to_string()
+    })]
+    MetaComment(String),
+
     // Comments - skip both C++ and C style
     #[regex(r"//[^\n]*", logos::skip)]
     #[regex(r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/", logos::skip)]
@@ -179,5 +186,6 @@ pub fn token_to_string(token: &PtxSpecToken) -> String {
         PtxSpecToken::Register(s) => s.clone(),
         PtxSpecToken::Identifier(s) => s.clone(),
         PtxSpecToken::StringLiteral(s) => format!("\"{}\"", s),
+        PtxSpecToken::MetaComment(s) => format!("// @META {}", s),
     }
 }

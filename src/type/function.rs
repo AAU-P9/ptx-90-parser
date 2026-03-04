@@ -1,4 +1,5 @@
 use super::common::{Instruction, Label};
+use super::meta::MetaDirective;
 use super::variable::{ParameterDirective, VariableDirective};
 use crate::Spanned;
 use crate::parser::Span;
@@ -200,6 +201,11 @@ pub enum FunctionStatement {
     },
     Block {
         statements: Vec<FunctionStatement>,
+        span: Span,
+    },
+    /// A `// @META` annotation inside a function body.
+    Meta {
+        directive: MetaDirective,
         span: Span,
     },
 }

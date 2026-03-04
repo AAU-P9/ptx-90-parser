@@ -69,5 +69,9 @@ fn write_token<W: Write>(writer: &mut W, token: &PtxToken) -> fmt::Result {
         PtxToken::At => writer.write_char('@'),
         PtxToken::Space => writer.write_char(' '),
         PtxToken::Newline => writer.write_char('\n'),
+        PtxToken::MetaComment(content) => {
+            writer.write_str("// @META ")?;
+            writer.write_str(content)
+        }
     }
 }

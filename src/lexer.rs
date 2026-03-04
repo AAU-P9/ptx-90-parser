@@ -9,6 +9,13 @@ use logos::Logos;
 #[logos(error = LexError)]
 #[logos(skip r"[ \t\r\n]+")]
 pub enum PtxToken {
+    // Capture // @META comments as tokens
+    #[regex(r"// @META[^\n]*", priority = 10, callback = |lex| {
+        let s = lex.slice();
+        s["// @META".len()..].trim().to_string()
+    })]
+    MetaComment(String),
+
     #[regex(r"//[^\n]*", logos::skip)]
     #[regex(r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/", logos::skip)]
     #[token("::")]
@@ -112,7 +119,8 @@ impl PtxToken {
             | PtxToken::HexFloatSingle(s)
             | PtxToken::HexFloatDouble(s)
             | PtxToken::Register(s)
-            | PtxToken::StringLiteral(s) => s.as_str(),
+            | PtxToken::StringLiteral(s)
+            | PtxToken::MetaComment(s) => s.as_str(),
             PtxToken::DoubleColon => "::",
             PtxToken::Dot => ".",
             PtxToken::Comma => ",",
@@ -155,7 +163,8 @@ impl PtxToken {
             | PtxToken::HexFloatSingle(s)
             | PtxToken::HexFloatDouble(s)
             | PtxToken::Register(s)
-            | PtxToken::StringLiteral(s) => s.len(),
+            | PtxToken::StringLiteral(s)
+            | PtxToken::MetaComment(s) => s.len(),
             PtxToken::DoubleColon => 2,
             PtxToken::Dot
             | PtxToken::Comma

@@ -186,6 +186,13 @@ impl TreeDisplay for FunctionStatement {
                 ))?;
                 f.field_vec(true, "statements", statements, source)
             }
+            FunctionStatement::Meta { directive, span } => {
+                f.root(&format!(
+                    "FunctionStatement::Meta [{}] {:?}",
+                    f.format_raw(*span, source),
+                    directive.tag
+                ))
+            }
         }
     }
 }

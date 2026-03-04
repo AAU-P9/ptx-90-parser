@@ -13,6 +13,7 @@ use crate::{
     r#type::{
         AliasFunctionDirective, CodeLinkage, DataLinkage, DwarfDirective, EntryFunctionDirective,
         FuncFunctionDirective, SectionDirective, module::*, variable::ModuleVariableDirective,
+        parse_meta_content,
     },
 };
 
@@ -25,6 +26,7 @@ impl PtxParser for Module {
 impl PtxParser for ModuleDirective {
     fn parse() -> impl Fn(&mut PtxTokenStream) -> Result<(Self, Span), PtxParseError> {
         alt!(
+            parse_module_meta(),
             parse_module_variable(),
             parse_entry_function(),
             parse_func_function(),
@@ -32,6 +34,28 @@ impl PtxParser for ModuleDirective {
             parse_module_info(),
             parse_module_debug()
         )
+    }
+}
+
+fn parse_module_meta()
+-> impl Fn(&mut PtxTokenStream) -> Result<(ModuleDirective, Span), PtxParseError> {
+    move |stream: &mut PtxTokenStream| {
+        let (token, span) = stream.peek()?;
+        if let PtxToken::MetaComment(raw) = token {
+            let raw = raw.clone();
+            let span = *span;
+            stream.consume()?;
+            let directive = parse_meta_content(&raw, span);
+            Ok((ModuleDirective::Meta { directive, span }, span))
+        } else {
+            Err(PtxParseError {
+                kind: ParseErrorKind::UnexpectedToken {
+                    expected: vec!["MetaComment".to_string()],
+                    found: format!("{:?}", token),
+                },
+                span: *span,
+            })
+        }
     }
 }
 

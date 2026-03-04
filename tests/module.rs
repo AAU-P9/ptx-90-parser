@@ -224,6 +224,7 @@ fn instruction_count_in_statement(statement: &FunctionStatement) -> usize {
         FunctionStatement::Label { .. } => 0,
         FunctionStatement::Instruction { .. } => 1,
         FunctionStatement::Directive { .. } => 0,
+        FunctionStatement::Meta { .. } => 0,
         FunctionStatement::Block { statements, .. } => {
             statements.iter().map(instruction_count_in_statement).sum()
         }

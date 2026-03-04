@@ -1,5 +1,6 @@
 use super::common::*;
 use super::function::{DwarfDirective, SectionDirective};
+use super::meta::MetaDirective;
 use super::variable::ModuleVariableDirective;
 use crate::Spanned;
 use crate::parser::Span;
@@ -41,6 +42,11 @@ pub enum ModuleDirective {
     },
     Debug {
         directive: ModuleDebugDirective,
+        span: Span,
+    },
+    /// A `// @META` annotation at module level.
+    Meta {
+        directive: MetaDirective,
         span: Span,
     },
 }

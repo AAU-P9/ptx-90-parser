@@ -462,6 +462,16 @@ impl PtxUnparser for FunctionStatement {
                 tokens.push(PtxToken::RBrace);
                 push_newline(tokens, spaced);
             }
+            FunctionStatement::Meta { directive, .. } => {
+                // Reconstruct the raw meta comment string
+                let version_prefix = match directive.version {
+                    Some(v) => format!(":{}", v),
+                    None => String::new(),
+                };
+                let tag_str = format!("{:?}", directive.tag);
+                tokens.push(PtxToken::MetaComment(format!("{} {}", version_prefix, tag_str).trim().to_string()));
+                push_newline(tokens, spaced);
+            }
         }
     }
 }

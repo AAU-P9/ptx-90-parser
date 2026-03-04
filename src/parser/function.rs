@@ -23,6 +23,7 @@ use crate::{
         LocationDirective, LocationInlinedAt, ParameterDirective, PragmaDirective,
         PragmaDirectiveKind, RegisterDirective, RegisterTarget, SectionDirective, SectionEntry,
         StatementDirective, StatementSectionDirectiveLine, VariableDirective, VariableSymbol,
+        parse_meta_content,
     },
 };
 
@@ -161,7 +162,26 @@ impl PtxParser for FunctionStatement {
             FunctionStatement::Instruction { instruction }
         );
 
-        alt!(label_stmt, block_stmt, directive_stmt, instruction_stmt)
+        let meta_stmt = move |stream: &mut PtxTokenStream| {
+            let (token, span) = stream.peek()?;
+            if let PtxToken::MetaComment(raw) = token {
+                let raw = raw.clone();
+                let span = *span;
+                stream.consume()?;
+                let directive = parse_meta_content(&raw, span);
+                Ok((FunctionStatement::Meta { directive, span }, span))
+            } else {
+                Err(PtxParseError {
+                    kind: ParseErrorKind::UnexpectedToken {
+                        expected: vec!["MetaComment".to_string()],
+                        found: format!("{:?}", token),
+                    },
+                    span: *span,
+                })
+            }
+        };
+
+        alt!(label_stmt, block_stmt, directive_stmt, instruction_stmt, meta_stmt)
     }
 }
 
