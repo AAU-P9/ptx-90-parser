@@ -1,5 +1,5 @@
-use crate::Spanned;
 use crate::parser::Span;
+use crate::Spanned;
 use serde::Serialize;
 
 /// A structured `// @META` annotation embedded in PTX output.
@@ -69,10 +69,7 @@ pub enum MetaTag {
         num_entries: u32,
     },
     /// `CONST <symbol_name> <fields>`
-    Const {
-        symbol_name: String,
-        fields: String,
-    },
+    Const { symbol_name: String, fields: String },
     /// `CUSTOM <key> <value...>`
     Custom { key: String, value: String },
     /// `VERSION <n>` (legacy v2 protocol)
@@ -86,10 +83,19 @@ pub enum MetaTag {
 /// A constraint on a `PARAM` annotation (e.g. `range=1:8192`, `align=128`).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum MetaConstraint {
-    Range { lo: String, hi: String },
-    Stride { value: String },
-    Multiple { value: String },
-    Align { value: String },
+    Range {
+        lo: String,
+        hi: String,
+    },
+    Stride {
+        value: String,
+    },
+    Multiple {
+        value: String,
+    },
+    Align {
+        value: String,
+    },
     ReadOnly,
     WriteOnly,
     ReadWrite,
@@ -272,8 +278,10 @@ fn parse_loop(rest: &str) -> MetaTag {
     if tokens.len() >= 4 {
         MetaTag::Loop {
             label: tokens[0].to_string(),
-            min_iters: tokens[1].parse().unwrap_or(0),
-            max_iters: tokens[2].parse().unwrap_or(0),
+
+            //since we may have simple math expressions in the iteration counts, need to eval them.
+            min_iters: eval_simple_expr(tokens[1]).unwrap_or(0),
+            max_iters: eval_simple_expr(tokens[2]).unwrap_or(0),
             is_unrolled: tokens[3] == "true",
         }
     } else {
@@ -338,4 +346,9 @@ fn parse_version_tag(rest: &str) -> MetaTag {
     MetaTag::Version {
         version: rest.trim().parse().unwrap_or(0),
     }
+}
+
+fn eval_simple_expr(expr: &str) -> Option<u32> {
+    let result = meval::eval_str(expr).unwrap();
+    Some(result as u32)
 }
