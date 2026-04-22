@@ -276,19 +276,38 @@ fn parse_shared_mem(rest: &str) -> MetaTag {
 fn parse_loop(rest: &str) -> MetaTag {
     let tokens: Vec<&str> = rest.split_whitespace().collect();
     if tokens.len() >= 4 {
+        let label = tokens[0];
+        let is_unrolled = tokens[tokens.len() - 1];
+        let middle = &tokens[1..tokens.len() - 1];
+        let (min_str, max_str) = split_two_exprs(middle);
         MetaTag::Loop {
-            label: tokens[0].to_string(),
-
-            //since we may have simple math expressions in the iteration counts, need to eval them.
-            min_iters: eval_simple_expr(tokens[1]).unwrap_or(0),
-            max_iters: eval_simple_expr(tokens[2]).unwrap_or(0),
-            is_unrolled: tokens[3] == "true",
+            label: label.to_string(),
+            min_iters: eval_simple_expr(&min_str).unwrap_or(0),
+            max_iters: eval_simple_expr(&max_str).unwrap_or(0),
+            is_unrolled: is_unrolled == "true",
         }
     } else {
         MetaTag::Unknown {
             raw: format!("LOOP {}", rest),
         }
     }
+}
+
+/// Split a slice of tokens into two arithmetic expressions.
+/// Splits at the first `number number` boundary at paren depth 0.
+fn split_two_exprs(tokens: &[&str]) -> (String, String) {
+    const OPS: &[&str] = &["+", "-", "*", "/"];
+    let mut depth: i32 = 0;
+    for i in 1..tokens.len() {
+        let prev = tokens[i - 1];
+        depth += prev.chars().filter(|&c| c == '(').count() as i32;
+        depth -= prev.chars().filter(|&c| c == ')').count() as i32;
+        if depth == 0 && !OPS.contains(&prev) && !OPS.contains(&tokens[i]) {
+            return (tokens[..i].join(" "), tokens[i..].join(" "));
+        }
+    }
+    let mid = tokens.len() / 2;
+    (tokens[..mid].join(" "), tokens[mid..].join(" "))
 }
 
 /// `LAYOUT <name> <order> <dims_expr>`
@@ -349,6 +368,31 @@ fn parse_version_tag(rest: &str) -> MetaTag {
 }
 
 fn eval_simple_expr(expr: &str) -> Option<u32> {
-    let result = meval::eval_str(expr).unwrap();
-    Some(result as u32)
+    meval::eval_str(expr).ok().map(|r| r as u32)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_loop_paren_expr() {
+        let cases = [
+            ("outer_loop 32 / 8 32 / 8 false", 4u32, 4u32, false),
+            ("smem_load_loop 128 / (((128 * 128) / (8 * 8)) / 8) 128 / (((128 * 128) / (8 * 8)) / 8) false", 4, 4, false),
+            ("spam_loop 1 1 false", 1, 1, false),
+            ("dot_loop 8 8 false", 8, 8, false),
+        ];
+        for (input, exp_min, exp_max, exp_unrolled) in cases {
+            let tag = parse_loop(input);
+            match tag {
+                MetaTag::Loop { label: _, min_iters, max_iters, is_unrolled } => {
+                    assert_eq!(min_iters, exp_min, "min for '{}'", input);
+                    assert_eq!(max_iters, exp_max, "max for '{}'", input);
+                    assert_eq!(is_unrolled, exp_unrolled, "unrolled for '{}'", input);
+                }
+                other => panic!("expected Loop, got {:?} for '{}'", other, input),
+            }
+        }
+    }
 }
