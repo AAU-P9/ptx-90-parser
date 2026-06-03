@@ -282,8 +282,8 @@ fn parse_loop(rest: &str) -> MetaTag {
         let (min_str, max_str) = split_two_exprs(middle);
         MetaTag::Loop {
             label: label.to_string(),
-            min_iters: eval_simple_expr(&min_str).unwrap_or(0),
-            max_iters: eval_simple_expr(&max_str).unwrap_or(0),
+            min_iters: eval_simple_expr(&min_str).unwrap_or_else(|| panic!(" META LOOP, could not parse min_iters :('{}'", rest)),
+            max_iters: eval_simple_expr(&max_str).unwrap_or_else(|| panic!(" META LOOP, could not parse max_iters :('{}'", rest)),
             is_unrolled: is_unrolled == "true",
         }
     } else {
@@ -363,7 +363,7 @@ fn parse_custom(rest: &str) -> MetaTag {
 /// `VERSION <n>`
 fn parse_version_tag(rest: &str) -> MetaTag {
     MetaTag::Version {
-        version: rest.trim().parse().unwrap_or(0),
+        version: rest.trim().parse().unwrap_or_else(|_| panic!(" META BAD :('{}'", rest)),
     }
 }
 
